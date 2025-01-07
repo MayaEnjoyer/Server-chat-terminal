@@ -1,15 +1,26 @@
 import os
 import sys
 import socket
-
-
-
-
-
-
-
-
-
+import threading
+from datetime import datetime
+from PyQt5.QtWidgets import (
+    QApplication,
+    QWidget,
+    QHBoxLayout,
+    QVBoxLayout,
+    QLineEdit,
+    QPushButton,
+    QLabel,
+    QFileDialog,
+    QDialog,
+    QDialogButtonBox,
+    QGridLayout,
+    QComboBox,
+    QTextBrowser,
+    QListWidget
+)
+from PyQt5.QtCore import Qt, QUrl, pyqtSignal, pyqtSlot
+from PyQt5.QtGui import QDesktopServices, QIcon
 
 
 class UsernameDialog(QDialog):
@@ -71,6 +82,16 @@ class UsernameDialog(QDialog):
         updateDisplaySignal = pyqtSignal(str)
         userListSignal = pyqtSignal(str, list)
         historySignal = pyqtSignal(str, str)
+
+    def __int__(self):
+        super().__int__()
+        self.buttons.accepted
+        self.username = None
+        self.color = "#000000"
+        self.rooms = []
+        self.current_room = None
+        self.room_logs = {}
+        self.
 
 
 
