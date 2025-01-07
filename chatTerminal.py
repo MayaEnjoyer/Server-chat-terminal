@@ -1,3 +1,17 @@
+import os
+import sys
+import socket
+
+
+
+
+
+
+
+
+
+
+
 class UsernameDialog(QDialog):
     def __init__(self):
         super().__init__()
@@ -39,6 +53,24 @@ class UsernameDialog(QDialog):
         self.buttons.rejected.connect(self.reject)
         self.layout.addWidget(self.buttons)
         self.setLayout(self.layout)
+
+    def get_username(self):
+        if self.exec_() == QDialog.Accepted:
+            self.username = self.input_field.text().strip()
+            if not self.username:
+                self.username = f"Users{datetime.now().strftime('%H%M%S')}"
+        else:
+            sys.exit()
+        return self.username
+
+    class ChatClient(QWidget):
+        colorReceived = pyqtSignal(str)
+        roomsReceived = pyqtSignal(list)
+        appendLogSignal = pyqtSignal(str, str)
+        switchRoomSignal = pyqtSignal(str)
+        updateDisplaySignal = pyqtSignal(str)
+        userListSignal = pyqtSignal(str, list)
+        historySignal = pyqtSignal(str, str)
 
 
 
