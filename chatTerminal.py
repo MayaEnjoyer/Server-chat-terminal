@@ -87,12 +87,26 @@ class UsernameDialog(QDialog):
         super().__int__()
         self.buttons.accepted
         self.username = None
-        self.color = "#000000"
+        self.color = '#000000'
         self.rooms = []
         self.current_room = None
         self.room_logs = {}
-        self.
+        self.cline_socked = None
+        self.receive_thread = None
+        self.pending_file = None
+        self.buffer = ''
+        self.init_ui()
+
+        self.colorReceived.connect(self.on_color_reseived)
+        self.roomsReseived.connect(self.on_rooms_reseived)
+        self.appendLogSignal.connect(self.on_append_log)
+        self.updateDisplaySignal.connect(self.on_update_display)
+        self.switchRoomSignal.connect(self.on_switch_signal)
+        self.userListSignal.connect(self.on_userlist_received)
+        self.historySignal.connect(self.on_history_received)
 
 
-
+    def init_ui(self):
+        icon_path = os.path.join(getattr(sys, '_MEIPASS', '.'), 'icon.png')
+        self.setWindowIcon(QIcon(icon_path))
 
