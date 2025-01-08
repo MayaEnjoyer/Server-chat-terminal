@@ -110,3 +110,13 @@ class UsernameDialog(QDialog):
         icon_path = os.path.join(getattr(sys, '_MEIPASS', '.'), 'icon.png')
         self.setWindowIcon(QIcon(icon_path))
 
+        self.setWindowTitle("Chat Client")
+        self.setGeometry(300, 150, 800, 700)
+        self.layout = QHBoxLayout()
+        self.main_layout = QVBoxLayout()
+        self.header_layout = QHBoxLayout()
+        self.header_label = QLabel("Welcome to the chat", self)
+        self.header_label.setAlignment(Qt.AlignCenter)
+        self.header_label.setStyleSheet("font-size: 24px; font-weight: bold; color: #2c3e50;")
+        self.header_layout.addWidget(self.header_label)
+        self.room_box = QComboBox()
