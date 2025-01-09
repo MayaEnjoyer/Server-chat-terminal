@@ -120,3 +120,16 @@ class UsernameDialog(QDialog):
         self.header_label.setStyleSheet("font-size: 24px; font-weight: bold; color: #2c3e50;")
         self.header_layout.addWidget(self.header_label)
         self.room_box = QComboBox()
+        self.room_box.setStyleSheet("font-size:14px; padding:5px;")
+        self.room_box.currentIndexChanged.connect(self.user_switch_room_request)
+        self.header_layout.addWidget(self.room_box)
+        self.main_layout.addLayout(self.header_layout)
+        self.chat_display = QTextBrowser()
+        self.chat_display.setReadOnly(True)
+        self.chat_display.anchorClicked.connect(self.open_link)
+        self.chat_display.setStyleSheet(
+            "background-color: #ecf0f1; font-size: 16px; padding: 10px; border-radius: 5px;"
+        )
+        self.main_layout.addWidget(self.chat_display)
+        self.message_input_layout = QHBoxLayout()
+        self.message_input = QLineEdit()
