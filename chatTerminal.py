@@ -133,3 +133,31 @@ class UsernameDialog(QDialog):
         self.main_layout.addWidget(self.chat_display)
         self.message_input_layout = QHBoxLayout()
         self.message_input = QLineEdit()
+        self.message_input.setPlaceholderText("Enter your message...")
+        self.message_input.setStyleSheet(
+            "font-size: 16px; padding: 10px; border: 1px solid #bdc3c7; border-radius: 5px;"
+        )
+        self.message_input.returnPressed.connect(self.send_message)
+        self.message_input_layout.addWidget(self.message_input)
+        self.send_button = QPushButton('Send')
+        self.send_button.setStyleSheet(
+            "background-color: #3498db; color: white; font-size: 16px; padding: 10px; border-radius: 5px;"
+        )
+        self.send_button.clicked.connect(self.send_message)
+        self.message_input_layout.addWidget(self.send_button)
+        self.file_button = QPushButton("Send files")
+        self.file_button.setStyleSheet(
+            "background-color: #9b59b6; color: white; font-size: 16px; padding: 10px; border-radius: 5px;"
+        )
+        self.file_button.clicked.connect(self.send_file)
+        self.message_input_layout.addWidget(self.file_button)
+        self.main_layout.addLayout(self.message_input_layout)
+        self.footer = QLabel("Developed by Hubar", self)
+        self.footer.setAlignment(Qt.AlignCenter)
+        self.footer.setStyleSheet("font-size: 12px; color: #7f8c8d;")
+        self.main_layout.addWidget(self.footer)
+        self.user_list = QListWidget()
+        self.user_list.setStyleSheet("font-size:14px; border:1px solid #bdc3c7;")
+        self.layout.addLayout(self.main_layout, stretch=3)
+        self.layout.addWidget(self.user_list, stretch=1)
+        self.setLayout(self.layout)
