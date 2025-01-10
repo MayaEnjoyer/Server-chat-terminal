@@ -161,3 +161,151 @@ class UsernameDialog(QDialog):
         self.layout.addLayout(self.main_layout, stretch=3)
         self.layout.addWidget(self.user_list, stretch=1)
         self.setLayout(self.layout)
+
+        def open_link(self, url: QUrl):
+            QDesktopServices.openUrl(url)
+
+        def load_username(self):
+            if os.path.exists('username.txt'):
+                with open('username.txt', 'r', encoding='utf-8') as f:
+                    name = f.read().strip()
+                    if name:
+                        return name
+            return None
+
+        def save_username(self, username):
+            with open('username.txt', 'w', encoding='utf-8') as f:
+                f.write(username)
+
+        def get_username(self):
+            stored_name = self.load_username()
+            if stored_name:
+                self.username = stored_name
+            else:
+                dialog = UsernameDialog()
+                self.username = dialog.get_username()
+                self.save_username(self.username)
+
+        def connect_to_server(self, host, port):
+            self.client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            try:
+                self.client_socket.connect((host, port))
+                self.client_socket.send(f"USERNAME:{self.username}\n".encode('utf-8'))
+                self.receive_thread = threading.Thread(
+                    target=self.receive_messages, daemon=True
+                )
+                self.receive_thread.start()
+                self.appendLogSignal.emit('general', "Connection to server successful!")
+            except Exception as e:
+                self.appendLogSignal.emit('general', f"Failed to connect: {e}")
+                self.updateDisplaySignal.emit('general')
+
+        def append_to_log(self, room, message):
+            if room not in self.room_logs:
+                self.room_logs[room] = ''
+            self.room_logs[room] += message + '<br>'
+
+        @pyqtSlot(str, str)
+        def on_append_log(self, room, html_message):
+            self.append_to_log(room, html_message)
+
+        def update_chat_display(self, room):
+            if room in self.room_logs:
+                self.chat_display.setHtml(self.room_logs[room])
+            else:
+                self.chat_display.setHtml('')
+
+        @pyqtSlot(str)
+        def on_update_display(self, room):
+            self.update_chat_display(room)
+
+        def receive_file_data(self, filesize):
+            file_data = b''
+            received = 0
+            while received < filesize:
+                chunk = self.client_socket.recv(min(4096, filesize - received))
+                if not chunk:
+                    break
+                file_data += chunk
+                received += len(chunk)
+            return file_data
+
+        @pyqtSlot(str, str)
+        def on_history_received(self, room_name, history_text):
+            lines = history_text.split('\n')
+            self.room_logs[room_name] = ''
+            for line in lines:
+                line = line.strip()
+                if line:
+                    if ':' in line:
+                        color, message = line.split(':', 1)
+                        color = color.strip()
+                        message = message.strip()
+                        msg_html = f'<span style="color:{color}">{message}</span><br>'
+                        self.room_logs[room_name] += msg_html
+                    else:
+                        self.room_logs[room_name] += line + '<br>'
+            if room_name == self.current_room:
+                self.update_chat_display(room_name)
+
+        def process_message(self, line):
+            if line.startswith('COLOR:'):
+                c = line.split(':', 1)[1]
+                self.colorReceived.emit(c)
+            elif line.startswith('ROOMS:'):
+                rooms_list = line.split(':', 1)[1]
+                r = rooms_list.split(',')
+                self.roomsReceived.emit(r)
+            elif line.startswith('FILE:'):
+                filename = line.split(':', 1)[1]
+                size_line = self.get_next_line()
+                if size_line.startswith('FILESIZE:'):
+                    filesize = int(size_line.split(':', 1)[1])
+                    file_data = self.receive_file_data(filesize)
+                    local_filename = f"received_{filename}"
+                    with open(local_filename, 'wb') as f:
+                        f.write(file_data)
+                    msg = f'<span style="color:#34495e">File received: <a href="file://{os.path.abspath(local_filename)}">{filename}</a></span>'
+                    self.appendLogSignal.emit(self.current_room, msg)
+                    if self.room_box.currentText() == self.current_room:
+                        self.updateDisplaySignal.emit(self.current_room)
+            elif line.startswith('USERLIST:'):
+                parts = line.split(':', 2)
+                room_name = parts[1]
+                users_str = parts[2]
+                users_list = users_str.split(',') if users_str else []
+                self.userListSignal.emit(room_name, users_list)
+            elif line.startswith('HISTORY:'):
+                # HISTORY:room_name:history_text
+                prefix, room_name, history_text = line.split(':', 2)
+                self.historySignal.emit(room_name, history_text)
+            else:
+                if ':' in line:
+                    color, message = line.split(':', 1)
+                    color = color.strip()
+                    message = message.strip()
+                    msg_html = f'<span style="color:{color}">{message}</span>'
+                    self.appendLogSignal.emit(self.current_room, msg_html)
+                    if self.room_box.currentText() == self.current_room:
+                        self.updateDisplaySignal.emit(self.current_room)
+
+    def send_file(self):
+        file_path, _ = QFileDialog.getOpenFileName(self, "Select file")
+        if file_path:
+            try:
+                filename = os.path.basename(file_path)
+                self.client_socket.send((f"FILE:{filename}\n").encode('utf-8'))
+                filesize = os.path.getsize(file_path)
+                self.client_socket.send((f"FILESIZE:{filesize}\n").encode('utf-8'))
+                with open(file_path, 'rb') as f:
+                    while True:
+                        chunk = f.read(4096)
+                        if not chunk:
+                            break
+                        self.client_socket.send(chunk)
+                        msg_html = f"File {filename} sent!"
+                        self.appendLogSignal.emit(self.current_room, msg_html)
+                        self.updateDisplaySignal.emit(self.current_room)
+            except Exception as e:
+                        self.appendLogSignal.emit(self.current_room, f"Failed to send file: {e}")
+                        self.updateDisplaySignal.emit(self.current_room)
