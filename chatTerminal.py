@@ -23,6 +23,10 @@ from PyQt5.QtCore import Qt, QUrl, pyqtSignal, pyqtSlot
 from PyQt5.QtGui import QDesktopServices, QIcon
 
 
+class ChatClient:
+    pass
+
+
 class UsernameDialog(QDialog):
     def __init__(self):
         super().__init__()
@@ -277,4 +281,134 @@ class UsernameDialog(QDialog):
                 self.userListSignal.emit(room_name, users_list)
             elif line.startswith('HISTORY:'):
                 # HISTORY:room_name:history_text
+                prefix, room_name, history_text = line.split(':', 2)
+                self.historySignal.emit(room_name, history_text)
+            else:
+                if ":" in line:
+                    color, message = line.split(':', 1)
+                    color = color.strip()
+                    message = message.strip()
+                    msg_html = f'<span style="color:{color}">{message}</span>'
+                    self.appendLogSignal.emit(self.current_room, msg_html)
+                    if self.room_box.currentText() == self.current_room:
+                        self.updateDisplaySignal.emit(self.current_room)
 
+            def get_next_line(self):
+                while True:
+                    if '\n' in self.buffer:
+                        lines = self.buffer.split('\n')
+                        line = lines[0].strip()
+                        self.buffer = '\n'.join(lines[1:])
+                        return line
+                    data = self.client_socket.recv(1024)
+                    if not data:
+                        return ''
+                    self.buffer += data.decode('utf-8')
+
+            def receive_messages(self):
+                while True:
+                    try:
+                        data = self.client_socket.recv(1024)
+                        if not data:
+                            break
+                        self.buffer += data.decode('utf-8')
+                        lines = self.buffer.split('\n')
+                        for line in lines[:-1]:
+                            line = line.strip()
+                            if line:
+                                self.process_message(line)
+                        self.buffer = lines[-1]
+                    except:
+                        break
+
+            @pyqtSlot(str)
+            def on_color_received(self, c):
+                self.color = c
+
+            @pyqtSlot(list)
+            def on_rooms_received(self, r):
+                self.rooms = r
+                self.room_box.clear()
+                self.room_box.addItems(self.rooms)
+                if 'general' in self.rooms:
+                    self.current_room = 'general'
+                    idx = self.rooms.index('general')
+                    self.room_box.setCurrentIndex(idx)
+                    if 'general' not in self.room_logs:
+                        self.room_logs['general'] = ''
+                    self.updateDisplaySignal.emit('general')
+
+            def send_message(self):
+                message = self.message_input.text().strip()
+                if message:
+                    try:
+                        timestamp = datetime.now().strftime('%H:%M:%S')
+                        formatted_message = f"[{timestamp}] {self.username}: {message}"
+                        self.client_socket.send((formatted_message + '\n').encode('utf-8'))
+                        msg_html = f'<span style="color:{self.color}">{formatted_message}</span>'
+                        self.appendLogSignal.emit(self.current_room, msg_html)
+                        self.updateDisplaySignal.emit(self.current_room)
+                        self.message_input.clear()
+                    except Exception as e:
+                        self.appendLogSignal.emit(self.current_room, f"Failed to send message: {e}")
+                        self.updateDisplaySignal.emit(self.current_room)
+
+            def send_file(self):
+                file_path, _ = QFileDialog.getOpenFileName(self, "Select file")
+                if file_path:
+                    try:
+                        filename = os.path.basename(file_path)
+                        self.client_socket.send((f"FILE:{filename}\n").encode('utf-8'))
+                        filesize = os.path.getsize(file_path)
+                        self.client_socket.send((f"FILESIZE:{filesize}\n").encode('utf-8'))
+                        with open(file_path, 'rb') as f:
+                            while True:
+                                chunk = f.read(4096)
+                                if not chunk:
+                                    break
+                                self.client_socket.send(chunk)
+                        msg_html = f"File {filename} sent!"
+                        self.appendLogSignal.emit(self.current_room, msg_html)
+                        self.updateDisplaySignal.emit(self.current_room)
+                    except Exception as e:
+                        self.appendLogSignal.emit(self.current_room, f"Failed to send file: {e}")
+                        self.updateDisplaySignal.emit(self.current_room)
+
+            def user_switch_room_request(self):
+                new_room = self.room_box.currentText()
+                if new_room and new_room != self.current_room:
+                    self.client_socket.send((f"SWITCHROOM:{new_room}\n").encode('utf-8'))
+                    self.switchRoomSignal.emit(new_room)
+
+            @pyqtSlot(str)
+            def on_switch_room(self, new_room):
+                self.current_room = new_room
+                self.updateDisplaySignal.emit(new_room)
+
+            @pyqtSlot(str, list)
+            def on_userlist_received(self, room_name, users):
+                if room_name == self.current_room:
+                    self.user_list.clear()
+                    for u in users:
+                        self.user_list.addItem(u)
+
+            def closeEvent(self, event):
+                if self.client_socket:
+                    try:
+                        self.client_socket.send(
+                            (f"[{datetime.now().strftime('%H:%M:%S')}] {self.username} покинул чат.\n").encode('utf-8'))
+                        self.client_socket.close()
+                    except:
+                        pass
+                event.accept()
+
+        def main():
+            app = QApplication(sys.argv)
+            chat_client = ChatClient()
+            chat_client.get_username()
+            chat_client.connect_to_server('192.168.100.98', 5555)
+            chat_client.show()
+            sys.exit(app.exec_())
+
+        if __name__ == '__main__':
+            main()
