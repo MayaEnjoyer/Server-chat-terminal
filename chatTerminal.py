@@ -277,35 +277,4 @@ class UsernameDialog(QDialog):
                 self.userListSignal.emit(room_name, users_list)
             elif line.startswith('HISTORY:'):
                 # HISTORY:room_name:history_text
-                prefix, room_name, history_text = line.split(':', 2)
-                self.historySignal.emit(room_name, history_text)
-            else:
-                if ':' in line:
-                    color, message = line.split(':', 1)
-                    color = color.strip()
-                    message = message.strip()
-                    msg_html = f'<span style="color:{color}">{message}</span>'
-                    self.appendLogSignal.emit(self.current_room, msg_html)
-                    if self.room_box.currentText() == self.current_room:
-                        self.updateDisplaySignal.emit(self.current_room)
 
-    def send_file(self):
-        file_path, _ = QFileDialog.getOpenFileName(self, "Select file")
-        if file_path:
-            try:
-                filename = os.path.basename(file_path)
-                self.client_socket.send((f"FILE:{filename}\n").encode('utf-8'))
-                filesize = os.path.getsize(file_path)
-                self.client_socket.send((f"FILESIZE:{filesize}\n").encode('utf-8'))
-                with open(file_path, 'rb') as f:
-                    while True:
-                        chunk = f.read(4096)
-                        if not chunk:
-                            break
-                        self.client_socket.send(chunk)
-                        msg_html = f"File {filename} sent!"
-                        self.appendLogSignal.emit(self.current_room, msg_html)
-                        self.updateDisplaySignal.emit(self.current_room)
-            except Exception as e:
-                        self.appendLogSignal.emit(self.current_room, f"Failed to send file: {e}")
-                        self.updateDisplaySignal.emit(self.current_room)
