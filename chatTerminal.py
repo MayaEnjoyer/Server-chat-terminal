@@ -385,3 +385,30 @@ class UsernameDialog(QDialog):
                 self.current_room = new_room
                 self.updateDisplaySignal.emit(new_room)
 
+            @pyqtSlot(str, list)
+            def on_userlist_received(self, room_name, users):
+                if room_name == self.current_room:
+                    self.user_list.clear()
+                    for u in users:
+                        self.user_list.addItem(u)
+
+            def closeEvent(self, event):
+                if self.client_socket:
+                    try:
+                        self.client_socket.send(
+                            (f"[{datetime.now().strftime('%H:%M:%S')}] {self.username} покинул чат.\n").encode('utf-8'))
+                        self.client_socket.close()
+                    except:
+                        pass
+                event.accept()
+
+        def main():
+            app = QApplication(sys.argv)
+            chat_client = ChatClient()
+            chat_client.get_username()
+            chat_client.connect_to_server('192.168.100.98', 5555)
+            chat_client.show()
+            sys.exit(app.exec_())
+
+        if __name__ == '__main__':
+            main()
