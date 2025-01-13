@@ -374,3 +374,41 @@ class UsernameDialog(QDialog):
                         self.appendLogSignal.emit(self.current_room, f"Failed to send file: {e}")
                         self.updateDisplaySignal.emit(self.current_room)
 
+            def user_switch_room_request(self):
+                new_room = self.room_box.currentText()
+                if new_room and new_room != self.current_room:
+                    self.client_socket.send((f"SWITCHROOM:{new_room}\n").encode('utf-8'))
+                    self.switchRoomSignal.emit(new_room)
+
+            @pyqtSlot(str)
+            def on_switch_room(self, new_room):
+                self.current_room = new_room
+                self.updateDisplaySignal.emit(new_room)
+
+            @pyqtSlot(str, list)
+            def on_userlist_received(self, room_name, users):
+                if room_name == self.current_room:
+                    self.user_list.clear()
+                    for u in users:
+                        self.user_list.addItem(u)
+
+            def closeEvent(self, event):
+                if self.client_socket:
+                    try:
+                        self.client_socket.send(
+                            (f"[{datetime.now().strftime('%H:%M:%S')}] {self.username} покинул чат.\n").encode('utf-8'))
+                        self.client_socket.close()
+                    except:
+                        pass
+                event.accept()
+
+        def main():
+            app = QApplication(sys.argv)
+            chat_client = ChatClient()
+            chat_client.get_username()
+            chat_client.connect_to_server('192.168.100.98', 5555)
+            chat_client.show()
+            sys.exit(app.exec_())
+
+        if __name__ == '__main__':
+            main()
