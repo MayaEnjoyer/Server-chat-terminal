@@ -149,16 +149,3 @@ def handle_client(client_socket, color):
                 break
     client_socket.close()
 
-def start_server():
-    server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    server_socket.bind(('192.168.100.98', 5555))
-    server_socket.listen(5)
-    print("The server is running and listening....")
-    while True:
-        client_socket, _ = server_socket.accept()
-        client_color = generate_color()
-        thread = threading.Thread(target=handle_client, args=(client_socket, client_color))
-        thread.start()
-
-if __name__ == '__main__':
-    start_server()
