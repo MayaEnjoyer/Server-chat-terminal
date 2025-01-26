@@ -181,78 +181,78 @@ class UsernameDialog(QDialog):
         with open('username.txt', 'w', encoding='utf-8') as f:
                 f.write(username)
 
-    def get_username(self):
-        stored_name = self.load_username()
-        if stored_name:
-            self.username = stored_name
-        else:
-            dialog = UsernameDialog()
-            self.username = dialog.get_username()
-            self.save_username(self.username)
+def get_username(self):
+    stored_name = self.load_username()
+    if stored_name:
+        self.username = stored_name
+    else:
+        dialog = UsernameDialog()
+        self.username = dialog.get_username()
+        self.save_username(self.username)
 
-    def connect_to_server(self, host, port):
-        self.client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        try:
-            self.client_socket.connect((host, port))
-            self.client_socket.send(f"USERNAME:{self.username}\n".encode('utf-8'))
-            self.receive_thread = threading.Thread(
-                target=self.receive_messages, daemon=True
-                )
-            self.receive_thread.start()
-            self.appendLogSignal.emit('general', "Connection to server successful!")
-        except Exception as e:
-            self.appendLogSignal.emit('general', f"Failed to connect: {e}")
-            self.updateDisplaySignal.emit('general')
+def connect_to_server(self, host, port):
+    self.client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    try:
+        self.client_socket.connect((host, port))
+        self.client_socket.send(f"USERNAME:{self.username}\n".encode('utf-8'))
+        self.receive_thread = threading.Thread(
+            target=self.receive_messages, daemon=True
+        )
+        self.receive_thread.start()
+        self.appendLogSignal.emit('general', "Connection to server successful!")
+    except Exception as e:
+        self.appendLogSignal.emit('general', f"Failed to connect: {e}")
+        self.updateDisplaySignal.emit('general')
 
-    def append_to_log(self, room, message):
-        if room not in self.room_logs:
-            self.room_logs[room] = ''
-        self.room_logs[room] += message + '<br>'
+def append_to_log(self, room, message):
+    if room not in self.room_logs:
+        self.room_logs[room] = ''
+    self.room_logs[room] += message + '<br>'
 
-    @pyqtSlot(str, str)
-    def on_append_log(self, room, html_message):
-        self.append_to_log(room, html_message)
+@pyqtSlot(str, str)
+def on_append_log(self, room, html_message):
+    self.append_to_log(room, html_message)
 
-    def update_chat_display(self, room):
-        if room in self.room_logs:
-            self.chat_display.setHtml(self.room_logs[room])
-        else:
-            self.chat_display.setHtml('')
+def update_chat_display(self, room):
+    if room in self.room_logs:
+        self.chat_display.setHtml(self.room_logs[room])
+    else:
+        self.chat_display.setHtml('')
 
-    @pyqtSlot(str)
-    def on_update_display(self, room):
-        self.update_chat_display(room)
+@pyqtSlot(str)
+def on_update_display(self, room):
+    self.update_chat_display(room)
 
-    def receive_file_data(self, filesize):
-        file_data = b''
-        received = 0
-        while received < filesize:
-            chunk = self.client_socket.recv(min(4096, filesize - received))
-            if not chunk:
-                break
-            file_data += chunk
-            received += len(chunk)
-        return file_data
+def receive_file_data(self, filesize):
+    file_data = b''
+    received = 0
+    while received < filesize:
+        chunk = self.client_socket.recv(min(4096, filesize - received))
+        if not chunk:
+            break
+        file_data += chunk
+        received += len(chunk)
+    return file_data
 
-    @pyqtSlot(str, str)
-    def on_history_received(self, room_name, history_text):
-        lines = history_text.split('\n')
-        self.room_logs[room_name] = ''
-        for line in lines:
-            line = line.strip()
-            if line:
-                if ':' in line:
-                    color, message = line.split(':', 1)
-                    color = color.strip()
-                    message = message.strip()
-                    msg_html = f'<span style="color:{color}">{message}</span><br>'
-                    self.room_logs[room_name] += msg_html
-                else:
-                    self.room_logs[room_name] += line + '<br>'
-        if room_name == self.current_room:
-            self.update_chat_display(room_name)
+@pyqtSlot(str, str)
+def on_history_received(self, room_name, history_text):
+    lines = history_text.split('\n')
+    self.room_logs[room_name] = ''
+    for line in lines:
+        line = line.strip()
+        if line:
+            if ':' in line:
+                color, message = line.split(':', 1)
+                color = color.strip()
+                message = message.strip()
+                msg_html = f'<span style="color:{color}">{message}</span><br>'
+                self.room_logs[room_name] += msg_html
+            else:
+                self.room_logs[room_name] += line + '<br>'
+    if room_name == self.current_room:
+        self.update_chat_display(room_name)
 
-    def process_message(self, line):
+def process_message(self, line):
         if line.startswith('COLOR:'):
             c = line.split(':', 1)[1]
             self.colorReceived.emit(c)
@@ -293,19 +293,19 @@ class UsernameDialog(QDialog):
                     if self.room_box.currentText() == self.current_room:
                         self.updateDisplaySignal.emit(self.current_room)
 
-    def get_next_line(self):
-        while True:
-            if '\n' in self.buffer:
-                lines = self.buffer.split('\n')
-                line = lines[0].strip()
-                self.buffer = '\n'.join(lines[1:])
-            return line
-            data = self.client_socket.recv(1024)
-            if not data:
-                return ''
-            self.buffer += data.decode('utf-8')
+def get_next_line(self):
+    while True:
+        if '\n' in self.buffer:
+            lines = self.buffer.split('\n')
+            line = lines[0].strip()
+            self.buffer = '\n'.join(lines[1:])
+        return line
+        data = self.client_socket.recv(1024)
+        if not data:
+            return ''
+        self.buffer += data.decode('utf-8')
 
-    def receive_messages(self):
+def receive_messages(self):
         while True:
             try:
                 data = self.client_socket.recv(1024)
