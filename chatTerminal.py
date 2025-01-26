@@ -315,7 +315,7 @@ class UsernameDialog(QDialog):
                 lines = self.buffer.split('\n')
                 for line in lines[:-1]:
                     line = line.strip()
-                    if line:
+                if line:
                 self.process_message(line)
                 self.buffer = lines[-1]
             except:
