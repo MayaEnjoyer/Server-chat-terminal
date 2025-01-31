@@ -305,21 +305,7 @@ def get_next_line(self):
             return ''
         self.buffer += data.decode('utf-8')
 
-def receive_messages(self):
-    while True:
-        try:
-            data = self.client_socket.recv(1024)
-            if not data:
-                break
-            self.buffer += data.decode('utf-8')
-            lines = self.buffer.split('\n')
-            for line in lines[:-1]:
-                line = line.strip()
-            if line:
-        self.process_message(line)
-            self.buffer = lines[-1]
-        except:
-                break
+
 
     @pyqtSlot(str)
     def on_color_received(self, c):
