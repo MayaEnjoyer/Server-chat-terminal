@@ -306,7 +306,23 @@ def get_next_line(self):
         self.buffer += data.decode('utf-8')
 
 
+def receive_messages(self):
+    while True:
+        try:
+            data = self.client_socket.recv(1024)
+            if not data:
+                break
+            self.buffer += data.decode('utf-8')
+            lines = self.buffer.split('\n')
 
+            for line in lines[:-1]:
+                line = line.strip()
+                if line:
+                    self.process_message(line)
+            self.buffer = lines[-1]
+        except Exception as e:
+            print(f"Error receiving message: {e}")
+            break
     @pyqtSlot(str)
     def on_color_received(self, c):
         self.color = c
@@ -324,47 +340,47 @@ def get_next_line(self):
                 self.room_logs['general'] = ''
             self.updateDisplaySignal.emit('general')
 
-    def send_message(self):
-        message = self.message_input.text().strip()
-        if message:
-            try:
-                timestamp = datetime.now().strftime('%H:%M:%S')
-                formatted_message = f"[{timestamp}] {self.username}: {message}"
-                self.client_socket.send((formatted_message + '\n').encode('utf-8'))
-                msg_html = f'<span style="color:{self.color}">{formatted_message}</span>'
-                self.appendLogSignal.emit(self.current_room, msg_html)
-                self.updateDisplaySignal.emit(self.current_room)
-                self.message_input.clear()
-            except Exception as e:
-                self.appendLogSignal.emit(self.current_room, f"Failed to send message: {e}")
-                self.updateDisplaySignal.emit(self.current_room)
+def send_message(self):
+    message = self.message_input.text().strip()
+    if message:
+        try:
+            timestamp = datetime.now().strftime('%H:%M:%S')
+            formatted_message = f"[{timestamp}] {self.username}: {message}"
+            self.client_socket.send((formatted_message + '\n').encode('utf-8'))
+            msg_html = f'<span style="color:{self.color}">{formatted_message}</span>'
+            self.appendLogSignal.emit(self.current_room, msg_html)
+            self.updateDisplaySignal.emit(self.current_room)
+            self.message_input.clear()
+        except Exception as e:
+            self.appendLogSignal.emit(self.current_room, f"Failed to send message: {e}")
+            self.updateDisplaySignal.emit(self.current_room)
 
-    def send_file(self):
-        file_path, _ = QFileDialog.getOpenFileName(self, "Select file")
-        if file_path:
-            try:
-                filename = os.path.basename(file_path)
-                self.client_socket.send((f"FILE:{filename}\n").encode('utf-8'))
-                filesize = os.path.getsize(file_path)
-                self.client_socket.send((f"FILESIZE:{filesize}\n").encode('utf-8'))
-                with open(file_path, 'rb') as f:
-                    while True:
-                        chunk = f.read(4096)
-                        if not chunk:
-                            break
-                        self.client_socket.send(chunk)
-                msg_html = f"File {filename} sent!"
-                self.appendLogSignal.emit(self.current_room, msg_html)
-                self.updateDisplaySignal.emit(self.current_room)
-            except Exception as e:
-                self.appendLogSignal.emit(self.current_room, f"Failed to send file: {e}")
-                self.updateDisplaySignal.emit(self.current_room)
+def send_file(self):
+    file_path, _ = QFileDialog.getOpenFileName(self, "Select file")
+    if file_path:
+        try:
+            filename = os.path.basename(file_path)
+            self.client_socket.send((f"FILE:{filename}\n").encode('utf-8'))
+            filesize = os.path.getsize(file_path)
+            self.client_socket.send((f"FILESIZE:{filesize}\n").encode('utf-8'))
+            with open(file_path, 'rb') as f:
+                while True:
+                    chunk = f.read(4096)
+                    if not chunk:
+                        break
+                    self.client_socket.send(chunk)
+            msg_html = f"File {filename} sent!"
+            self.appendLogSignal.emit(self.current_room, msg_html)
+            self.updateDisplaySignal.emit(self.current_room)
+        except Exception as e:
+            self.appendLogSignal.emit(self.current_room, f"Failed to send file: {e}")
+            self.updateDisplaySignal.emit(self.current_room)
 
-    def user_switch_room_request(self):
-                new_room = self.room_box.currentText()
-                if new_room and new_room != self.current_room:
-                    self.client_socket.send((f"SWITCHROOM:{new_room}\n").encode('utf-8'))
-                    self.switchRoomSignal.emit(new_room)
+def user_switch_room_request(self):
+    new_room = self.room_box.currentText()
+    if new_room and new_room != self.current_room:
+        self.client_socket.send((f"SWITCHROOM:{new_room}\n").encode('utf-8'))
+        self.switchRoomSignal.emit(new_room)
 
     @pyqtSlot(str)
     def on_switch_room(self, new_room):
@@ -378,15 +394,15 @@ def get_next_line(self):
             for u in users:
                 self.user_list.addItem(u)
 
-    def closeEvent(self, event):
-            if self.client_socket:
-                try:
-                    self.client_socket.send(
-                        (f"[{datetime.now().strftime('%H:%M:%S')}] {self.username} left the chat.\n").encode('utf-8'))
-                    self.client_socket.close()
-                except:
-                    pass
-            event.accept()
+def closeEvent(self, event):
+        if self.client_socket:
+            try:
+                self.client_socket.send(
+                    (f"[{datetime.now().strftime('%H:%M:%S')}] {self.username} left the chat.\n").encode('utf-8'))
+                self.client_socket.close()
+            except:
+                pass
+        event.accept()
 
 def main():
     app = QApplication(sys.argv)
